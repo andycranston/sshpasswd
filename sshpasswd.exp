@@ -1,0 +1,295 @@
+#! /usr/local/bin/expect --
+#
+# @(!--#) @(#) sshpasswd.exp, version 006, 28-november-2019
+#
+# ssh into a host using a speficied user name and password.
+# then run the passwd command on the remote system to change
+# the user password to a second sepcified password.
+#
+
+# -------------------------------------------------------------------
+
+set debug 0
+
+# -------------------------------------------------------------------
+
+proc fatalerror {errmsg} {
+  global progname
+
+  send_error "\n"
+  send_error "******************************************************************************\n"
+  send_error "***\n"
+  send_error "*** FATAL ERROR running program: $progname\n"
+  send_error "***\n"
+  send_error "*** $errmsg\n"
+  send_error "***\n"
+  send_error "******************************************************************************\n"
+
+  exit 1
+}
+  
+# -------------------------------------------------------------------
+
+proc runpasswd {} {
+  global progname
+  global curpass
+  global newpass
+  global prompt
+
+  send "passwd\r"
+
+  expect {
+    timeout {
+      fatalerror "timeout waiting for the current password prompt"
+      exit 1
+    }
+    eof {
+      fatalerror "end of file waiting for the current password prompt"
+      exit 1
+    }
+    "$prompt" {
+      fatalerror "back at the command prompt waiting for the current password prompt"
+      exit 1
+    }
+      "(current) UNIX password: " {
+      # fall through
+    }
+  }
+
+  send "$curpass\r"
+
+  expect {
+    timeout {
+      fatalerror "timeout waiting for the new password prompt"
+      exit 1
+    }
+    eof {
+      fatalerror "end of file waiting for the new password prompt"
+      exit 1
+    }
+    "$prompt" {
+      fatalerror "back at the command prompt waiting for the new password prompt"
+      exit 1
+    }
+    "Enter new UNIX password: " {
+      # fall through
+    }
+  }
+
+  send "$newpass\r"
+
+  expect {
+    timeout {
+      fatalerror "timeout waiting for confirm new password prompt"
+      exit 1
+    }
+    eof {
+      fatalerror "end of file waiting for confirm new password prompt"
+      exit 1
+    }
+    "$prompt" {
+      fatalerror "back at the command prompt waiting for confirm new password prompt"
+      exit 1
+    }
+    "Retype new UNIX password: " {
+      # fall through
+    }
+  }
+
+  send "$newpass\r"
+
+  while {1} {
+    expect {
+      timeout {
+        fatalerror "timeout while waiting for success message"
+        exit 1
+      }
+      eof {
+        fatalerror "end of file while waiting for success message"
+        exit 1
+      }
+      "passwd: password updated successfully" {
+        # go round
+      }
+      "$prompt" {
+        # break out here
+        break
+      }
+    }
+  }
+
+  return
+}
+
+# -------------------------------------------------------------------
+
+#
+# Main
+#
+
+set progname [file tail $argv0]
+
+puts "### PROGRAM $progname STARTING ###"
+
+set argc [llength $argv]
+
+set hostname ""
+set username ""
+set curenvvar "CPASS"
+set newenvvar "NPASS"
+set testflag 0
+set prompt ""
+
+set i 0
+set position 0
+
+while {$i < $argc} {
+  set arg [lindex $argv $i]
+
+  if {[string equal $arg "-t"]} {
+    set testflag 1
+  } elseif {[string equal $arg "-p"]} {
+    incr i
+    if {$i >= $argc} {
+      fatalerror "expecting prompt text after the -p command line option"
+      exit 1
+    }
+    set prompt [lindex $argv $i]
+  } else {
+    incr position
+
+    if {$position > 4} {
+      fatalerror "too many positional command line arguments"
+      exit 1
+    }
+
+    if {$position == 1} {
+      set hostname $arg
+    } elseif {$position == 2} {
+      set username $arg
+    } elseif {$position == 3} {
+      set curenvvar $arg
+    } elseif {$position == 4} {
+      set newenvvar $arg
+    } else {
+      fatalerror "logic error processing positional command line arguments"
+      exit 1
+    }
+  }
+
+  incr i
+}
+
+if {$position < 2} {
+  fatalerror "not enough positional command line arguments"
+  exit 1
+}
+
+if {$curenvvar == $newenvvar} {
+  fatalerror "the current and new environment variables are the same - \"$curenvvar\""
+  exit 1
+}
+
+if {[string length $prompt] == 0} {
+  set prompt "[set username]@[set hostname]:~$ "
+}
+
+if {[catch {set curpass $env($curenvvar)}] != 0} {
+  fatalerror "environment variable \"$curenvvar\" is not set"
+  exit 1
+}
+
+if {[string length $curpass] == 0} {
+  fatalerror "environment variable \"$curenvvar\" is set to the null string"
+  exit 1
+}
+
+if {[catch {set newpass $env($newenvvar)}] != 0} {
+  fatalerror "environment variable \"$newenvvar\" is not set"
+  exit 1
+}
+
+if {[string length $newpass] == 0} {
+  fatalerror "environment variable \"$newenvvar\" is set to the null string"
+  exit 1
+}
+
+if {[string match $curpass $newpass]} {
+  fatalerror "current and new environment variables \"$curenvvar\" and \"$newenvvar\" contain the same string"
+  exit 1
+}
+
+if {$debug} {
+  puts $hostname
+  puts $username
+  puts $curenvvar
+  puts $newenvvar
+  puts $prompt
+  puts $testflag
+}
+
+spawn ssh [set username]@[set hostname]
+
+set passcount 0
+
+while {1} {
+  expect {
+    timeout {
+      fatalerror "timeout during login stage"
+      exit 1
+    }
+    eof {
+      fatalerror "unexpected end of file while attempting login"
+      exit 1
+    }
+    "$prompt" {
+      # we are logged in now - break out of loop
+      break
+    }
+    "[set username]@*'s password: " {
+      incr passcount
+      if {$passcount > 1} {
+        fatalerror "being asked for password a second time - it must be the wrong password"
+        exit 1
+      }
+      send "$curpass\r"
+    }
+    "Are you sure you want to continue connecting (yes/no)? " {
+      send "yes\r"
+    }
+  }
+}
+
+if {$testflag} {
+  puts ""
+  puts "### TESTING LOGIN ONLY ###"
+} else {
+  runpasswd
+}
+
+
+# if {$success != 1} {
+#   fatalerror "there was a problem changing the password"
+#   exit 1
+# }
+
+# logout
+send "exit\r"
+
+expect {
+  timeout {
+    fatalerror "time out while trying to logout"
+    exit 1
+  }
+  eof {
+    # do nothing - fall through
+  }
+}
+
+if {$testflag} {
+  puts "### TEST LOGIN SUCCESSFUL ###"
+} else {
+  puts "### PASSWORD CHANGE SUCCESSFUL ###"
+}
+
+exit 0
