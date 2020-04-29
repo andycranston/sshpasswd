@@ -2,17 +2,17 @@
 
 An expect script to ssh into a host as a user and change that users password.
 
-The `sshpasswd` expect script for UNIX/Linux systems automates
-the `ssh` command and logs into a host as a user. Once logged in it
-issues the `passwd` command and changes the user password. It then logs out
-and the `ssh` command exits.
+The `sshpasswd` expect script for UNIX/Linux systems automates the `ssh`
+command and logs into a host as a user. Once logged in it issues the
+`passwd` command and changes the user password. It then logs out and the
+`ssh` command exits.
 
 ## Pre-requisites
 
 This is what you will need:
 
 + A UNIX/Linux system with expect installed
-+ `/usr/local/bin/expect` is either the expect executable of a link to it
++ `/usr/local/bin/expect` is either the expect executable or a link to it
 
 ## Demonstration video
 
@@ -23,8 +23,8 @@ demonstrating the `sshpasswd` expect script:
 
 ## Example run
 
-Copy the `sshpasswd.exp` filke from the repositiory to a UNIX/Linux system
-that has expect installed and /usr/local/bin/expect is either the expect
+Copy the `sshpasswd.exp` file from the repository to a UNIX/Linux system
+that has expect installed and `/usr/local/bin/expect` is either the expect
 executable or a link to it.
 
 Make the `sshpasswd.exp` file executable by all:
@@ -76,7 +76,7 @@ Connection to zappy closed.
 ### PASSWORD CHANGE SUCCESSFUL ###
 ```
 
-## It didn't work!
+## It didn't work when I ran it!
 
 Several things can go wrong. Here are some of the more common causes.
 
@@ -89,13 +89,13 @@ will have the format:
 username@hostname:-~
 ```
 
-after a successfil login where `username` is the username the
+after a successful login where `username` is the username the
 script logged in with and hostname is the hostname of the
 system. If your system displays a different prompt (even just a one
-character difference) thte `sshpasswd` expect script will not
+character difference) then the `sshpasswd` expect script will not
 work.
 
-However, this is easy to fix. For example of the shell prompt is:
+However, this is easy to fix. For example if the shell prompt is:
 
 ```
 dns $
@@ -147,7 +147,7 @@ allchange.sh
 
 It is a simple example of how you could change a user password on
 several hosts at once. Note that for such a simple solutuion to work
-the user must have the same password on each system.
+the user must have the same current password on each system.
 
 If you have to change user passwords on multiple systems then
 I recommend you build something with more error checking
@@ -161,8 +161,8 @@ environment variables because I can set them with my `setpw` utility:
 
 [Set Windows/UNIX/Linux environment variables with a password but keep the password hidden](https://github.com/andycranston/setpw)
 
-without them being displayed on the terminal screen or kept in shell
-history files. Also when my login session finishes the values of the
+without them being displayed on the terminal screen or being kept in shell
+history files like `.bash_history`. Also when my login session finishes the values of the
 environment varables are no longer accessible.
 
 You might have a better way to store passwords and other credentials. If
@@ -176,8 +176,8 @@ age old saying:
 
 > With great power comes great responsibility.
 
-Do not be the person who changed the root or other critical password on
-all your production servers and then forgot what the new password was!
+DO NOT be the person who changed the root or other critical password on
+all your production servers and then forgot what the new password was!!!
 
 ## Contact details
 
@@ -187,9 +187,9 @@ You can contact me via email:
 
 and you can find me on linkedin.com:
 
-    [Andy Cranston on Linkedin](https://www.linkedin.com/in/andy-cranston-innovation)
+[Andy Cranston on Linkedin](https://www.linkedin.com/in/andy-cranston-innovation)
 
-I would like to hear your feedback (positive and negative) on the
+I would like to hear your feedback (positive or negative) on the
 `sshpasswd` expect script.
 
 ------------------------------------------------
